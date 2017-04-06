@@ -1,0 +1,119 @@
+#include<bits/stdc++.h>
+#define n 501 // No of nodes
+using namespace std;
+
+//Global
+vector<int>graph[n];
+vector<bool>visited(n);
+vector<int>parent(n);
+
+
+
+// Here we only use residue matrix to store capacity, At the start the residue matrix will only contain the max capacity
+// of each path and the reverse path will be 0. Declaring gloabally residue matrix will do that for us.
+
+int residue[n][n];
+int max_flow = 0;
+
+int source,sink;
+
+int bfs()
+{
+
+    int s = source;
+    int t = sink;
+    int flow = INT_MAX;
+
+    queue<int> q;
+    q.push(s);
+
+    for(int i = 0 ; i < n ; i++)
+        visited[i] = false;
+
+    visited[s] = true;
+    parent[s] = -1;
+    bool check = false; //This is to check whether we encounter the sink during the bfs traversal.
+
+
+    while(!q.empty())
+    {
+
+        int x = q.front();
+        q.pop();
+
+        if(x == t)
+            check = true;
+
+        for(int i = 0 ; i < graph[x].size() ; i++)
+            if(!visited[graph[x][i]])
+                if(residue[x][graph[x][i]] > 0)  // Only Push the node in the queue if its weight in the residual graph > 0
+                {
+
+                    parent[graph[x][i]] = x;
+                    visited[graph[x][i]] = true;
+                    q.push(graph[x][i]);
+
+                }
+    }               // Simple Bfs till here just to find a path from source to sink.
+
+    if(!check)       // If no path exists, then the flow will be 0. so return 0.
+        return 0;
+
+    while(parent[t] != -1){   //else find the minimum value in the path using residual matrix and parent array.
+
+        flow = min(residue[parent[t]][t], flow);
+        t = parent[t];
+    }
+
+    t = sink;
+
+    while(parent[t] != -1){   // Now, since we had the min value of flow, update the value of path in the residual graph.
+
+        int u = parent[t];
+        residue[u][t] -= flow;
+        residue[t][u] += flow;
+        t = parent[t];
+    }
+
+
+    return flow;     // Return the value to edamand karp function.
+}
+
+int edmansKarp()
+{
+    int flow;
+
+    do{
+        flow = bfs();
+//      cout<<flow<<endl;
+        max_flow += flow;
+    }while(flow);               // Repeat the bfs process till we get a flow of 0.
+
+    return max_flow;             // Return the max flow.
+}
+
+int main()
+{
+
+    int v,e;   // vertex and edges count.
+    cin>>v>>e;
+
+    for(int i = 0 ; i < e ; i++)
+    {
+
+        int a,b,d;
+        cin>>a>>b>>d;
+
+        graph[a].push_back(b);                  // Graph is stored as Adjacency List.
+        graph[b].push_back(a);                  // Reverse Edge is Added because of the residual flow.
+
+        residue[a][b] = d;                     // Use Adjacency Matrix Capacity to store max capacity.
+    }
+
+    cin>>source>>sink;
+
+    cout<<"Max Flow: "<<edmansKarp();            // Max Flow :)
+
+
+    return 0;
+}
